@@ -1,0 +1,20 @@
+{
+  "name": "redcolorbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@pedroslopez/moduleraid": "github:pedroslopez/moduleRaid",
+    "axios": "^1.7.7",
+    "moment": "^2.30.1",
+    "pikud-haoref-api": "^3.0.6",
+    "puppeteer": "^1.20.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#webpack-exodus"
+  }
+}
