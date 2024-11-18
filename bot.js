@@ -6,7 +6,7 @@ const path = require('path');
 const host = process.env.ALERTS_HOST || 'www.oref.org.il';
 const alertPath = process.env.ALERTS_PATH || '/warningMessages/alert/Alerts.json';
 const port = process.env.ALERTS_PORT || 443;
-const pollingInterval = process.env.POLLING_INTERVAL || 10000; // 10 seconds
+const pollingInterval = process.env.POLLING_INTERVAL || 500; // 10 seconds
 
 const options = {
   hostname: host,
@@ -20,7 +20,11 @@ const logFile = path.join(__dirname, 'alerts.log');
 function log(message) {
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] ${message}\n`;
+  
+  // Log to console
   console.log(logMessage);
+  
+  // Persist to file
   fs.appendFileSync(logFile, logMessage);
 }
 
@@ -49,6 +53,7 @@ function fetchAlerts() {
         log(`Received Alert: ID: ${jsonData.id}, Title: ${jsonData.title}, Description: ${jsonData.desc}`);
         
         if (Array.isArray(jsonData.data)) {
+          log('Alerts Array:');
           jsonData.data.forEach((item, index) => {
             log(`  Alert ${index + 1}: ${item}`);
           });
