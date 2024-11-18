@@ -1,38 +1,20 @@
 const https = require('https');
-const fs = require('fs');
-const path = require('path');
-
-// Use environment variables or default values
-const host = process.env.ALERTS_HOST || 'www.oref.org.il';
-const alertPath = process.env.ALERTS_PATH || '/warningMessages/alert/Alerts.json';
-const port = process.env.ALERTS_PORT || 443;
-const pollingInterval = process.env.POLLING_INTERVAL || 500; // 10 seconds
+const host = 'www.oref.org.il';
+const path = '/warningMessages/alert/Alerts.json';
+const port = 443;
 
 const options = {
   hostname: host,
   port: port,
-  path: alertPath,
+  path: path,
   method: 'GET',
 };
 
-// Simple logging function
-const logFile = path.join(__dirname, 'alerts.log');
-function log(message) {
-  const timestamp = new Date().toISOString();
-  const logMessage = `[${timestamp}] ${message}\n`;
-  
-  // Log to console
-  console.log(logMessage);
-  
-  // Persist to file
-  fs.appendFileSync(logFile, logMessage);
-}
+let lastAlertId = null; // Store the last processed alert ID
 
 function fetchAlerts() {
   const req = https.request(options, (res) => {
     let data = '';
-
-    log(`Status Code: ${res.statusCode}`);
 
     res.on('data', (chunk) => {
       data += chunk;
@@ -41,7 +23,7 @@ function fetchAlerts() {
     res.on('end', () => {
       try {
         if (!data.trim()) {
-          log('No alerts available or empty response from server.');
+          // No data received; skip processing silently
           return;
         }
 
@@ -50,42 +32,36 @@ function fetchAlerts() {
         }
 
         const jsonData = JSON.parse(data);
-        log(`Received Alert: ID: ${jsonData.id}, Title: ${jsonData.title}, Description: ${jsonData.desc}`);
-        
-        if (Array.isArray(jsonData.data)) {
-          log('Alerts Array:');
-          jsonData.data.forEach((item, index) => {
-            log(`  Alert ${index + 1}: ${item}`);
+
+        // Log the full JSON response for inspection
+        console.log('Full Response:', JSON.stringify(jsonData, null, 2));
+
+        if (jsonData.id !== lastAlertId) {
+          lastAlertId = jsonData.id; // Update the last processed alert ID
+          console.log(`[NEW ALERT] ID: ${jsonData.id}`);
+          console.log(`Title: ${jsonData.title}`);
+          console.log(`Description: ${jsonData.desc}`);
+          console.log(`Alerts:`);
+          jsonData.data.forEach((alert, index) => {
+            console.log(`  Alert ${index + 1}: ${alert}`);
           });
+
+          // Add any further processing logic here, e.g., notify users
         } else {
-          log('No alerts array found.');
+          console.log('[Duplicate Alert] Same as the last alert.');
         }
       } catch (error) {
-        log(`Error parsing JSON: ${error.message}`);
+        console.error('Error parsing JSON:', error.message);
       }
     });
   });
 
   req.on('error', (error) => {
-    log(`Request error: ${error.message}`);
+    console.error('Request error:', error.message);
   });
 
   req.end();
 }
 
-// Poll at specified intervals
-log('Starting alert polling...');
-const interval = setInterval(fetchAlerts, pollingInterval);
-
-// Graceful shutdown handling
-process.on('SIGINT', () => {
-  log('Shutting down gracefully...');
-  clearInterval(interval);
-  process.exit();
-});
-
-process.on('SIGTERM', () => {
-  log('Received termination signal. Shutting down...');
-  clearInterval(interval);
-  process.exit();
-});
+// Poll the API at intervals
+setInterval(fetchAlerts, 10000); // Adjust the interval as needed (10 seconds here)
