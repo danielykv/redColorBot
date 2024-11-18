@@ -110,7 +110,7 @@ function createAlertMessage(alert) {
 }
 
 // Poll the API for alerts at regular intervals
-setInterval(fetchAlerts, 10000); // Adjust interval as needed (10 seconds)
+setInterval(fetchAlerts, 300); // Adjust interval as needed (10 seconds)
 
 // Initialize WhatsApp client
 client
