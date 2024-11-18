@@ -1,67 +1,123 @@
-const https = require('https');
-const host = 'www.oref.org.il';
-const path = '/warningMessages/alert/Alerts.json';
+const qrcode = require("qrcode-terminal");
+const { Client, LocalAuth } = require("whatsapp-web.js");
+const https = require("https");
+const moment = require("moment");
+
+const chats = [
+  // "972507788163-1421054084@g.us", // hot group
+  // "972522435363-1444244865@g.us", // hazira
+  // "120363187558257665@g.us", // cops
+  // "120363046232734410@g.us", // avrham
+      "120363194848023280@g.us", // cinema
+  
+];
+
+const client = new Client({
+  authStrategy: new LocalAuth(),
+  puppeteer: {
+    headless: true,
+    executablePath: "/usr/bin/google-chrome-stable",
+  },
+});
+
+client.on("qr", (qr) => {
+  qrcode.generate(qr, { small: true });
+});
+
+client.on("ready", () => {
+  console.log("Client is ready!");
+});
+
+let lastAlertId = null; // Store the last processed alert ID
+
+const host = "www.oref.org.il";
+const path = "/warningMessages/alert/Alerts.json";
 const port = 443;
 
 const options = {
   hostname: host,
   port: port,
   path: path,
-  method: 'GET',
+  method: "GET",
 };
-
-let lastAlertId = null; // Store the last processed alert ID
 
 function fetchAlerts() {
   const req = https.request(options, (res) => {
-    let data = '';
+    let data = "";
 
-    res.on('data', (chunk) => {
+    res.on("data", (chunk) => {
       data += chunk;
     });
 
-    res.on('end', () => {
+    res.on("end", () => {
       try {
         if (!data.trim()) {
-          // No data received; skip processing silently
-          return;
+          return; // Skip empty responses
         }
 
         if (data.charCodeAt(0) === 0xFEFF) {
-          data = data.slice(1);
+          data = data.slice(1); // Remove BOM if present
         }
 
         const jsonData = JSON.parse(data);
 
-        // Log the full JSON response for inspection
-        console.log('Full Response:', JSON.stringify(jsonData, null, 2));
+        // Log the full JSON response for debugging
+        console.log("Full Response:", JSON.stringify(jsonData, null, 2));
 
         if (jsonData.id !== lastAlertId) {
           lastAlertId = jsonData.id; // Update the last processed alert ID
-          console.log(`[NEW ALERT] ID: ${jsonData.id}`);
-          console.log(`Title: ${jsonData.title}`);
-          console.log(`Description: ${jsonData.desc}`);
-          console.log(`Alerts:`);
-          jsonData.data.forEach((alert, index) => {
-            console.log(`  Alert ${index + 1}: ${alert}`);
-          });
 
-          // Add any further processing logic here, e.g., notify users
+          const alertMessage = createAlertMessage(jsonData);
+          console.log("[NEW ALERT]", alertMessage);
+
+          // Send alert to all defined chats
+          chats.forEach((id) => {
+            client
+              .sendMessage(id, alertMessage)
+              .then(() => {
+                console.log(`Message sent successfully to: ${id}`);
+              })
+              .catch((error) => {
+                console.error("Error sending message:", error);
+              });
+          });
         } else {
-          console.log('[Duplicate Alert] Same as the last alert.');
+          console.log("[Duplicate Alert] Same as the last alert.");
         }
       } catch (error) {
-        console.error('Error parsing JSON:', error.message);
+        console.error("Error parsing JSON:", error.message);
       }
     });
   });
 
-  req.on('error', (error) => {
-    console.error('Request error:', error.message);
+  req.on("error", (error) => {
+    console.error("Request error:", error.message);
   });
 
   req.end();
 }
 
-// Poll the API at intervals
-setInterval(fetchAlerts, 300); // Adjust the interval as needed (10 seconds here)
+// Function to create the alert message
+function createAlertMessage(alert) {
+  const { title, desc, data } = alert;
+
+  const alertMessage = 
+    `🚨 *${title}* (${moment().format("HH:mm:ss")}):\n` +
+    `${desc}\n\n` +
+    `Locations: ${data.join(", ")}`;
+
+  return alertMessage;
+}
+
+// Poll the API for alerts at regular intervals
+setInterval(fetchAlerts, 10000); // Adjust interval as needed (10 seconds)
+
+// Initialize WhatsApp client
+client
+  .initialize()
+  .then(() => {
+    console.log("Client initialized successfully");
+  })
+  .catch((err) => {
+    console.error("Error initializing client", err);
+  });
