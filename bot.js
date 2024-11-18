@@ -64,4 +64,4 @@ function fetchAlerts() {
 }
 
 // Poll the API at intervals
-setInterval(fetchAlerts, 10000); // Adjust the interval as needed (10 seconds here)
+setInterval(fetchAlerts, 300); // Adjust the interval as needed (10 seconds here)
