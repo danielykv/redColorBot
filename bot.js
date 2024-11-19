@@ -17,6 +17,18 @@ const client = new Client({
   puppeteer: {
     headless: true,
     executablePath: "/usr/bin/google-chrome-stable",
+    args: [
+      "--no-sandbox", // Disable sandbox for better performance
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage", // Use /tmp instead of /dev/shm
+      "--disable-extensions", // Disable extensions to save resources
+      "--disable-gpu", // Disable GPU for headless mode
+      "--single-process", // Runs in a single process to reduce overhead
+      "--no-zygote", // Disable zygote process
+      "--no-first-run", // Skip first-run tasks
+      "--disable-background-networking",
+      "--disable-sync",
+    ],
   },
 });
 
