@@ -18,16 +18,16 @@ const client = new Client({
     headless: true,
     executablePath: "/usr/bin/google-chrome-stable",
     args: [
-      "--no-sandbox", // Disable sandbox for better performance
+      "--no-sandbox",
       "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage", // Use /tmp instead of /dev/shm
-      "--disable-extensions", // Disable extensions to save resources
-      "--disable-gpu", // Disable GPU for headless mode
-      "--single-process", // Runs in a single process to reduce overhead
-      "--no-zygote", // Disable zygote process
-      "--no-first-run", // Skip first-run tasks
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--no-first-run",
+      "--no-zygote",
+      "--single-process",
+      "--disable-background-timer-throttling",
+      "--disable-renderer-backgrounding",
       "--disable-background-networking",
-      "--disable-sync",
     ],
   },
 });
